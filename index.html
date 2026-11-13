@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TickLab</title>
+<style>
+:root{--bg:#f3f1ec;--card:#fff;--ink:#1c2430;--mute:#5d6877;--line:#d9d5cb;--win:#1f7a4d;--loss:#b3402f;--acc:#2a4d8f;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12161d;--card:#1b222c;--ink:#e8ebf0;--mute:#9aa5b4;--line:#2d3745;--win:#4cc38a;--loss:#f0806c;--acc:#7da2e8}}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 Georgia,serif;padding:12px 12px 90px}
+h1{font-size:1.25rem;margin:2px 0}.sub{margin:0 0 10px;color:var(--mute);font-size:.85rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px}
+.tabs{display:flex;gap:6px;margin-bottom:10px;overflow-x:auto}.tabs button{flex:1 0 auto;background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.tabs button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.g .full{grid-column:1/-1}
+label{display:block;font-size:.78rem;color:var(--mute);margin-bottom:2px}
+select,input{width:100%;padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+button{padding:10px;border:0;border-radius:8px;font:600 .95rem Georgia,serif;color:#fff;background:var(--acc);cursor:pointer}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}button.stop{background:var(--loss)}
+:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.top{display:flex;justify-content:space-between;align-items:baseline}.top b{font-size:1.4rem}
+.tick{font:600 1.6rem ui-monospace,Menlo,monospace}.w{color:var(--win)}.l{color:var(--loss)}
+table{width:100%;border-collapse:collapse;font-size:.82rem}td,th{padding:4px 3px;text-align:left;border-bottom:1px solid var(--line)}.wrap{overflow-x:auto}
+.dg{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:8px 0 18px}.dg div{aspect-ratio:1;border-radius:50%;border:3px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.68rem;color:var(--mute);position:relative}.dg div b{font-size:1.05rem;color:var(--ink)}.dg .hi{border-color:var(--win)}.dg .lo{border-color:var(--loss)}.dg .cur::after{content:'▲';position:absolute;bottom:-16px;color:var(--acc);font-size:.7rem}
+.oe{display:flex;gap:4px;flex-wrap:wrap;margin:6px 0}.oe span{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.75rem;background:var(--acc);color:#fff}.oe span.e{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+summary{cursor:pointer;font-weight:600;padding:6px 0}details p{margin:4px 0 8px;font-size:.88rem}button small{display:block;font-weight:400;opacity:.85}
+.note{font-size:.78rem;color:var(--mute);margin:6px 0 0}.pane{display:none}.pane.on{display:block}
+#fab{position:fixed;right:14px;bottom:calc(16px + env(safe-area-inset-bottom,0px));width:56px;height:56px;border-radius:50%;z-index:6;box-shadow:0 3px 10px #0005;background:linear-gradient(135deg,#6a3fd0,#3b6fe0);font-size:1.15rem;letter-spacing:1px}#fab::after{content:'';position:absolute;top:3px;right:3px;width:12px;height:12px;border-radius:50%;background:#2ecc71;border:2px solid var(--card)}
+#an{position:fixed;left:8px;top:90px;width:min(340px,calc(100vw - 16px));background:var(--card);border:1px solid var(--acc);border-radius:12px;z-index:5;box-shadow:0 8px 24px #0006;display:none;max-height:75vh;overflow:auto}
+#an.on{display:block}#hd{padding:9px 12px;background:var(--acc);color:#fff;border-radius:11px 11px 0 0;cursor:grab;touch-action:none;display:flex;justify-content:space-between;user-select:none}
+#anb{padding:10px}.bars{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;height:70px;align-items:end;margin:8px 0 2px}
+.bars div{background:var(--acc);border-radius:3px 3px 0 0;min-height:2px}.bars .hl{background:var(--loss)}.lb{display:grid;grid-template-columns:repeat(10,1fr);text-align:center;font-size:.7rem;color:var(--mute)}
+</style></head><body>
+<h1>TickLab</h1>
+<p class="sub">Binary analysis tool. Simulated market and fake balance. No account connection, no tokens, no real trades.</p>
+
+<div class="card"><div class="top"><span id="mk">Volatility 100 (1s)</span><b id="bal"></b></div>
+<div class="tick" id="tick">-</div><div class="note" id="stk"></div>
+<div class="g"><div class="full"><label for="mkt">Market</label><select id="mkt"><option value="0.2">Volatility 10 (1s)</option><option value="0.5">Volatility 25 (1s)</option><option value="1">Volatility 50 (1s)</option><option value="1.5">Volatility 75 (1s)</option><option value="2" selected>Volatility 100 (1s)</option></select></div><div><label for="spd">Speed</label><select id="spd"><option value="1000">Normal (1s)</option><option value="250">Fast (0.25s)</option></select></div><div><label>Ticks processed · last digit</label><div style="padding:9px 0"><span id="tc">0</span> · <span id="ld">-</span></div></div></div></div>
+
+<div class="tabs" role="tablist"><button class="on" data-p="d">Home</button><button data-p="t">Manual</button><button data-p="bk">Bulk</button><button data-p="a">Auto</button><button data-p="r">Risk</button><button data-p="b">Builder</button><button data-p="f">Free Bots</button><button data-p="u">Tutorials</button><button data-p="k">Account</button></div>
+
+<div class="pane card" id="t">
+<div class="g"><div><label for="mt">Contract</label><select id="mt"><option>even</option><option>odd</option><option>rise</option><option>fall</option><option>over</option><option>under</option><option>matches</option><option>differs</option></select></div>
+<div><label for="mb">Digit (over/under/matches/differs)</label><select id="mb"></select></div>
+<div><label for="ms">Stake ($)</label><input id="ms" type="number" min="0.35" step="0.05" value="0.5"></div>
+<div><label>Expected payout</label><div id="mp" style="padding:9px 0"></div></div>
+<div class="full"><label for="mn">Bulk trades at once (1 to 10)</label><input id="mn" type="number" min="1" max="10" value="1"></div><div class="full"><label for="mv">No. of volatilities (spread bulk trades across markets)</label><select id="mv"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div><button class="full" id="mgo">Place trade(s) (1 tick)</button></div></div>
+
+<div class="pane card" id="a">
+<div class="g"><div><label for="as">Strategy rule</label><select id="as"><option value="eo">Even/Odd %</option><option value="rf">Rise/Fall %</option><option value="ou">Over/Under digit %</option><option value="md">Matches/Differs digit %</option><option value="tm">Trend momentum (5 vs 30 ticks)</option><option value="sp">Speedbot (every tick)</option><option value="ld">Last N digits all Even/Odd</option><option value="od">Last N digits all over the digit</option></select></div>
+<div><label for="ad">Digit</label><select id="ad"></select></div>
+<div><label for="aw">Ticks to measure</label><input id="aw" type="number" min="10" max="1000" value="100"></div>
+<div><label for="at">If first side % ≥</label><input id="at" type="number" value="60"></div>
+<div><label for="aside">Then trade</label><select id="aside"><option value="1">First side</option><option value="2">Opposite side</option></select></div>
+<div><label for="ast">Stake ($)</label><input id="ast" type="number" min="0.35" step="0.05" value="0.5"></div>
+<div><label for="am">Martingale multiplier (1 = off)</label><input id="am" type="number" min="1" step="0.05" value="1"></div>
+<div><label for="ax">Max martingale steps</label><input id="ax" type="number" min="0" value="3"></div>
+<div><label for="atp">Take profit ($)</label><input id="atp" type="number" value="5"></div>
+<div><label for="asl">Stop loss ($)</label><input id="asl" type="number" value="5"></div><div><label for="arec">Recovery after a loss</label><select id="arec"><option value="none">Same contract</option><option value="over4">Over 4</option><option value="under5">Under 5</option></select></div><div><label for="apre">Load preset</label><select id="apre"><option value="">Choose...</option><option value="cautious">Cautious even/odd</option><option value="momentum">Momentum, no martingale</option><option value="scanner">Scanner-style recovery</option><option value="speed">Speedbot</option></select></div><div><label for="apar">Last-N rule: digits must be</label><select id="apar"><option value="0">Even</option><option value="1">Odd</option></select></div><label class="full" style="display:flex;gap:8px;align-items:center;font-size:.9rem;color:var(--ink)"><input type="checkbox" id="aalt" style="width:auto"> Alternate side every trade</label><label class="full" style="display:flex;gap:8px;align-items:center;font-size:.9rem;color:var(--ink)"><input type="checkbox" id="aaltl" style="width:auto"> Alternate side on each loss</label><label class="full" style="display:flex;gap:8px;align-items:center;font-size:.9rem;color:var(--ink)"><input type="checkbox" id="arm" style="width:auto"> Recovery mode: trade the opposite side after a loss</label>
+<button class="full" id="ago">Start auto trader</button></div>
+<p class="note" id="ast2">Stopped.</p></div>
+
+<div class="pane card" id="r">
+<div class="g"><div><label for="rb">Balance ($)</label><input id="rb" type="number" value="1000"></div>
+<div><label for="rp">Stake % of balance</label><input id="rp" type="number" step="0.1" value="1"></div>
+<div><label for="rm">Martingale multiplier</label><input id="rm" type="number" step="0.05" value="2"></div>
+<div><label for="rl">Loss limit ($)</label><input id="rl" type="number" value="50"></div></div>
+<p id="ro" style="margin:10px 0 0"></p></div>
+
+<div class="pane on card" id="d"><strong>Welcome to TickLab</strong><p class="note" style="font-size:.85rem">Practice mode: simulated market and a fake balance. Pick a starting point.</p>
+<div class="g"><button id="dup">Upload Bot<small>Load a saved bot file</small></button><button data-go="f">Free Bots<small>Ready-made templates</small></button><button data-go="b">Bot Builder<small>Build your own rules</small></button><button data-go="a">Quick Strategy<small>Auto trader presets</small></button><button class="full" data-go="k">Deriv Account<small>Log in with deriv.com (demo first)</small></button></div>
+<div id="dsum" class="note" style="font-size:.9rem;margin-top:10px"></div><p class="note">Tip: tap the AI button any time to check digit statistics.</p></div>
+
+<div class="pane card" id="f"><strong>Free Bots</strong><p class="note">Starting templates. Each one loads into the Auto Trader or the Builder, where you can edit every setting. None of them has a statistical edge, and each card says why.</p><div id="fbl"></div></div>
+
+<div class="pane card" id="u"><strong>Tutorials</strong>
+<details open><summary>1. Start here</summary><p>TickLab runs on a simulated market with a fake $1,000 balance. Nothing connects to a real account. Use Manual to place one trade, Auto for rule-based trading, and Builder to design your own rules.</p></details>
+<details><summary>2. Contract types and payouts</summary><p>Even/Odd and Rise/Fall win about 50% of the time. Over/Under wins based on the digit you pick (Over 4 is 50%, Over 8 is 10%). Matches wins 10% and Differs 90%. Every payout is set so the average return is 95% of the stake, so over time you lose about 5 cents per dollar staked.</p></details>
+<details><summary>3. Reading the scanner</summary><p>Tap the AI button to open the analyzer. It counts past digits and compares them with the expected percentage. A gap inside the stated range is normal randomness. Even a gap outside it does not make the next digit more likely.</p></details>
+<details><summary>4. Martingale and risk</summary><p>Multiplying the stake after a loss only changes how losses arrive. At $1 with x2, five losses in a row cost $31 and a sixth would need $32 more. Cap the steps, keep a stop loss, and set the stake as a small percent of your balance. The Risk tab shows how many losses in a row you can survive.</p></details>
+<details><summary>5. Using the Auto Trader</summary><p>Pick a rule, set the threshold, stake, take profit and stop loss, then Start. Presets load common setups. Alternate and Recovery options change which side it trades after a trade or loss, not the odds.</p></details>
+<details><summary>6. Using the Builder</summary><p>Set the trade type, add purchase conditions (the first true one buys), then set martingale and stop limits. Export gives you a bot file you can save. Paste it back and press Load to restore it.</p></details>
+<details><summary>7. Before using a real account</summary><p>Practice on Deriv's demo account first. Use a token with only the trade permission, never share it, and set a loss limit you can afford before you start. Never trade money you can't afford to lose.</p></details></div>
+
+<div class="pane card" id="bk"><strong>Bulk Trader</strong>
+<div class="g"><div><label for="bkm">Market</label><select id="bkm"></select></div><div><label for="bks">Trade type</label><select id="bks"><option value="eo">Even/Odd</option><option value="rf">Rise/Fall</option><option value="ou">Over/Under</option><option value="md">Matches/Differs</option></select></div><div><label for="bkw">Number of ticks (history)</label><select id="bkw"><option>100</option><option>500</option><option selected>1000</option></select></div><div><label for="bkd">Digit (Over/Under, Matches/Differs)</label><select id="bkd"></select></div></div>
+<div class="g"><div><label>Current tick</label><div class="tick" id="bkt" style="font-size:1.3rem">-</div></div><button class="ghost" id="bksc" style="align-self:end">Scan</button></div>
+<div class="dg" id="bkdg"></div><div class="oe" id="bkoe"></div>
+<div class="g"><div><label>Contract ticks</label><div style="padding:9px 0">1 tick</div></div><div><label for="bkst">Stake ($)</label><input id="bkst" type="number" min=".35" step=".05" value=".5"></div><div><label for="bkn">No. of bulk trades</label><select id="bkn"></select></div><div><label for="bkv">No. of volatilities</label><select id="bkv"></select></div></div>
+<p class="note" id="bkinfo"></p><div class="g"><button class="ghost" id="bka"></button><button id="bkb"></button></div>
+<p class="note">Percentages show how often each side appeared in the history window. They do not predict the next tick, and every contract pays out 95% on average.</p></div>
+
+<div class="pane card" id="k"><strong>Deriv account</strong>
+<p class="note" id="kst">Not logged in. This page only reads your account. It does not place real trades.</p>
+<div class="g"><div class="full"><label for="kapp">Your Deriv App ID</label><input id="kapp" inputmode="numeric" placeholder="From developers.deriv.com"></div><div class="full"><label for="kws">WebSocket URL</label><input id="kws" value="wss://ws.derivws.com/websockets/v3"></div><button class="full" id="klog">Log in with Deriv</button></div>
+<div id="kpick"></div><div id="kacc"></div>
+<details><summary>Or paste a demo API token</summary><p>Create a token with the Read scope on a demo account. It stays in this page's memory only and is gone when you close or reload it.</p><input id="ktok" type="password" autocomplete="off" placeholder="Demo API token"><button class="ghost" id="ktb" style="margin-top:6px;width:100%">Connect with token</button></details>
+<button class="stop" id="kout" style="display:none;width:100%;margin-top:8px">Log out</button>
+<p class="note">Log in on a demo account first and never share a token. TickLab never sees your password: deriv.com handles the login, and tokens are not stored.</p></div>
+
+<div class="pane card" id="b"><strong>1. Trade parameters</strong>
+<div class="g"><div><label for="bt">Trade type</label><select id="bt"><option value="rf">Up/Down (Rise/Fall)</option><option value="eo">Digits (Even/Odd)</option><option value="ou">Digits (Over/Under)</option><option value="md">Digits (Matches/Differs)</option></select></div><div><label for="bd">Digit (over/under, matches/differs)</label><select id="bd"></select></div><div><label for="bs">Stake ($)</label><input id="bs" type="number" min=".35" step=".05" value="1"></div><div><label>Duration</label><div style="padding:9px 0">1 tick</div></div></div>
+<strong style="display:block;margin-top:12px">2. Purchase conditions</strong><p class="note">The first condition that is true buys. For "Last tick is", value 1 = up, 0 = down.</p><div id="brules"></div><button class="ghost" id="badd" style="margin-top:8px">+ Add condition</button>
+<strong style="display:block;margin-top:12px">3. Restart trading conditions</strong>
+<div class="g"><div><label for="bm">Martingale multiplier (1 = off)</label><input id="bm" type="number" min="1" step=".05" value="1"></div><div><label for="bx">Max martingale steps</label><input id="bx" type="number" min="0" value="2"></div><div><label for="btp">Stop when profit ≥ ($)</label><input id="btp" type="number" value="5"></div><div><label for="bsl">Stop when loss ≥ ($)</label><input id="bsl" type="number" value="5"></div><div class="full"><label for="bq">Quick strategy</label><select id="bq"><option value="">Choose...</option><option value="rise">Always Rise</option><option value="follow">Even after a 3+ digit parity streak</option><option value="differs">Always Differs</option><option value="tickup">Follow the last tick</option></select></div><button class="full" id="bgo">Run bot</button></div>
+<label for="bj" style="margin-top:10px">Bot file (copy to save, paste then Load to import)</label><textarea id="bj" rows="3" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:12px ui-monospace,Menlo,monospace"></textarea><div class="g"><button class="ghost" id="bex">Export</button><button class="ghost" id="bld">Load</button></div><p class="note" id="bst">Stopped.</p></div>
+
+<div class="card"><div class="top"><strong>Trades</strong><span id="sum">0 · $0.00</span></div>
+<div id="tsum" class="note" style="font-size:.85rem"></div><div class="wrap"><table><thead><tr><th>Src</th><th>Contract</th><th>Stake</th><th>P/L</th></tr></thead><tbody id="log"></tbody></table></div>
+<details style="margin-top:8px"><summary>Journal</summary><div id="jrn" class="note"></div></details><button class="ghost" id="dl" style="margin-top:8px;width:100%">Download trades (CSV)</button><button class="ghost" id="rs" style="margin-top:8px;width:100%">Reset practice balance</button></div>
+
+<button id="fab" aria-label="Open signal analyzer" aria-expanded="false">AI</button>
+<section id="an" aria-label="Signal analyzer"><div id="hd"><span>Signal analyzer (drag)</span><span id="x" role="button" tabindex="0" aria-label="Close">✕</span></div>
+<div id="anb"><div class="g" style="margin-top:0"><div><label for="ns">Strategy</label><select id="ns"><option value="eo">Even/Odd</option><option value="rf">Rise/Fall</option><option value="ou">Over/Under</option><option value="md">Matches/Differs</option></select></div>
+<div><label for="nd">Digit</label><select id="nd"></select></div>
+<div><label for="nw">Ticks</label><select id="nw"><option>100</option><option selected>500</option><option>1000</option></select></div>
+<div><label>Latest tick</label><div class="tick" id="nt" style="font-size:1.2rem">-</div></div></div>
+<button id="nb" style="width:100%;margin-top:8px">Analyse</button><button class="ghost" id="nx" style="width:100%;margin-top:6px">Deep scan all markets</button><div class="wrap"><table id="dsT" style="display:none;margin-top:8px"></table></div>
+<div class="bars" id="bars"></div><div class="lb" id="lb"></div>
+<p id="nr" style="font-size:.85rem;margin:8px 0 0"></p>
+<button class="ghost" id="ns2" style="width:100%;margin-top:8px">Copy rule to Auto tab</button>
+<p class="note">Counts past ticks only. It cannot predict the next tick. Every contract here pays out 95% on average, so the expected result is a 5% loss per dollar staked.</p></div></section>
+
+<script>
+var $=function(i){return document.getElementById(i)},RTP=.95,ticks=0,TS=0,TPO=0,WN=0,LS=0,ROWS=[],JR=[],P=1000,px=[],bal=1000,N=0,PL=0,pend=[],auto=null;
+function fill(id,lo){var h='';for(var i=lo;i<10;i++)h+='<option>'+i+'</option>';$(id).innerHTML=h}
+['mb','ad','nd','bd'].forEach(function(i){fill(i,0);$(i).value=5});
+function dg(p){return Math.round(p*100)%10}
+function m$(v){return(v<0?'-':'')+'$'+Math.abs(v).toFixed(2)}
+function prob(t,b){return{even:.5,odd:.5,rise:.5,fall:.5,over:(9-b)/10,under:b/10,matches:.1,differs:.9}[t]}
+function won(t,b,e,x){var d=dg(x);return{even:d%2==0,odd:d%2==1,rise:x>e,fall:x<e,over:d>b,under:d<b,matches:d==b,differs:d!=b}[t]}
+function valid(t,b){return!((t=='over'&&b>8)||(t=='under'&&b<1))}
+function seed(){P=+$('mkt').value*100+500;px=[];for(var i=0;i<600;i++)tickp()}
+function tickp(){P=Math.max(5,P+(Math.random()-.5)*2*(+$('mkt').value+.2));px.push(+P.toFixed(2));if(px.length>1000)px.shift()}
+function show(){$('bal').textContent=m$(bal);$('sum').textContent=N+' · '+m$(PL);$('tsum').innerHTML='Total stake <b>'+m$(TS)+'</b> · Total payout <b>'+m$(TPO)+'</b> · Runs <b>'+N+'</b> · Won <b class="w">'+WN+'</b> · Lost <b class="l">'+LS+'</b> · P/L <b>'+m$(PL)+'</b>';$('dsum').innerHTML=$('tsum').innerHTML}
+function open(src,t,b,s,mk,sx){if(!valid(t,b)){alert('That digit is not valid for '+t+'.');return false}
+ if(!(s>=.35)||s>bal){alert('Stake must be at least $0.35 and within your balance.');return false}
+ bal-=s;pend.push({src:src,t:t,b:b,s:s,mk:mk||0,sx:sx==null?-1:sx,e:sx>=0?MS[sx].a[MS[sx].a.length-1]:mk?+(500+Math.random()*1000).toFixed(2):px[px.length-1]});show();return true}
+function settle(x){var q=pend;pend=[];q.forEach(function(o){var xx=o.sx>=0?MS[o.sx].a[MS[o.sx].a.length-1]:o.mk?+(o.e+(Math.random()-.5)*2*[.2,.5,1,1.5,2][o.mk%5]).toFixed(2):x,w=won(o.t,o.b,o.e,xx),pr=prob(o.t,o.b),r=w?o.s*(RTP/pr-1):-o.s;
+ if(w)bal+=o.s+r;PL+=r;N++;TS+=o.s;TPO+=w?o.s+r:0;if(w)WN++;else LS++;ROWS.push([N,o.src,o.t,o.b,o.s.toFixed(2),o.e,xx,w?'won':'lost',r.toFixed(2)]);jr('Trade '+N+' ('+o.src+') '+o.t+(w?' won ':' lost ')+m$(r));var tr=document.createElement('tr');
+ tr.innerHTML='<td>'+o.src+'</td><td>'+o.t+(/ov|un|ma|di/.test(o.t)?' '+o.b:'')+'</td><td>'+o.s.toFixed(2)+'</td><td class="'+(w?'w':'l')+'">'+m$(r)+'</td>';
+ $('log').prepend(tr);if(o.src=='auto')autoDone(w,r);if(o.src=='bot')botDone(w,r)});show()}
+function stats(s,w,b,A){var h=(A||px).slice(-w),n=h.length,c,f,p,lab;
+ if(s=='eo'){c=h.filter(function(v){return dg(v)%2==0}).length;p=.5;lab='Even'}
+ else if(s=='rf'){c=0;for(var i=1;i<n;i++)if(h[i]>h[i-1])c++;n--;p=.5;lab='Rise'}
+ else if(s=='ou'){c=h.filter(function(v){return dg(v)>b}).length;p=(9-b)/10;lab='Over '+b}
+ else{c=h.filter(function(v){return dg(v)==b}).length;p=.1;lab='Matches '+b}
+ return{n:n,c:c,pct:c/n*100,p:p*100,lab:lab,sd:2*Math.sqrt(p*(1-p)/n)*100}}
+function analyse(){var s=$('ns').value,w=+$('nw').value,b=+$('nd').value,h=px.slice(-w),cnt=Array(10).fill(0);
+ h.forEach(function(v){cnt[dg(v)]++});var mx=Math.max.apply(null,cnt),bh='',lh='';
+ cnt.forEach(function(v,i){bh+='<div class="'+((s=='ou'||s=='md')&&i==b?'hl':'')+'" style="height:'+Math.max(3,v/mx*100)+'%"></div>';lh+='<span>'+i+'</span>'});
+ $('bars').innerHTML=bh;$('lb').innerHTML=lh;var r=stats(s,w,b),d=r.pct-r.p,ok=Math.abs(d)<=r.sd;
+ $('nr').innerHTML='<b>'+r.lab+':</b> '+r.pct.toFixed(1)+'% observed vs '+r.p.toFixed(1)+'% expected ('+(d>=0?'+':'')+d.toFixed(1)+' pts). '+(ok?'This is within normal random variation (±'+r.sd.toFixed(1)+').':'This is outside the usual range, which still happens by chance and does not carry forward.')}
+$('nb').onclick=analyse;$('ns').onchange=analyse;$('nd').onchange=analyse;$('nw').onchange=analyse;
+$('ns2').onclick=function(){$('as').value=$('ns').value;$('ad').value=$('nd').value;$('aw').value=$('nw').value;tab('a')};
+function tab(p){document.querySelectorAll('.pane').forEach(function(e){e.classList.toggle('on',e.id==p)});document.querySelectorAll('.tabs button').forEach(function(b){b.classList.toggle('on',b.dataset.p==p)})}
+document.querySelectorAll('.tabs button').forEach(function(b){b.onclick=function(){tab(b.dataset.p)}});
+function mp(){var t=$('mt').value,b=+$('mb').value;$('mp').textContent=valid(t,b)?'Win pays '+m$(+$('ms').value*(RTP/prob(t,b)-1))+' ('+(prob(t,b)*100)+'% chance)':'Invalid digit'}
+['mt','mb','ms'].forEach(function(i){$(i).oninput=mp});mp();
+$('mgo').onclick=function(){var n=Math.min(10,Math.max(1,+$('mn').value||1));for(var i=0;i<n;i++)if(!open('manual',$('mt').value,+$('mb').value,+$('ms').value,i%(+$('mv').value)))break};
+// auto
+function autoStart(){var g=function(i){return +$(i).value};auto={s:$('as').value,b:g('ad'),w:g('aw'),th:g('at'),opp:$('aside').value=='2',base:g('ast'),m:g('am'),mx:g('ax'),tp:g('atp'),sl:g('asl'),step:0,stake:g('ast'),pl:0,busy:false,rec:$('arec').value,alt:$('aalt').checked,altl:$('aaltl').checked,rm:$('arm').checked,n:0,lf:0};jr('Auto trader started ('+$('as').value+')');$('ago').textContent='Stop auto trader';$('ago').className='full stop';$('ast2').textContent='Running. Waiting for rule.'}
+function autoStop(msg){auto=null;jr(msg||'Auto trader stopped');$('ago').textContent='Start auto trader';$('ago').className='full';$('ast2').textContent=msg||'Stopped.'}
+$('ago').onclick=function(){auto?autoStop():autoStart()};
+function avg(n){var h=px.slice(-n);return h.reduce(function(a,b){return a+b},0)/h.length}
+function side(){var a=auto;if(a.s=='sp')return a.opp?'odd':'even';if(a.s=='ld'||a.s=='od'){var N2=Math.min(20,Math.max(1,a.w)),h2=px.slice(-N2).map(dg);if(a.s=='ld'){var pr=+$('apar').value;return h2.every(function(d){return d%2==pr})?((pr==0)!=a.opp?'even':'odd'):null}return h2.every(function(d){return d>a.b})?(a.opp?'under':'over'):null}if(a.s=='tm'){var up=avg(5)>avg(30);return up!=a.opp?'rise':'fall'}var r=stats(a.s,a.w,a.b);if(r.pct<a.th)return null;
+ var m={eo:['even','odd'],rf:['rise','fall'],ou:['over','under'],md:['matches','differs']}[a.s];return a.opp?m[1]:m[0]}
+function autoTick(){if(!auto||auto.busy)return;var t=side();if(!t)return;var b=auto.b;var fl=((auto.alt&&auto.n%2)?1:0)+(auto.lf%2)+((auto.rm&&auto.step>0)?1:0);if(fl%2){t=OPP[t]}if(auto.step>0&&auto.rec!='none'){t=auto.rec=='over4'?'over':'under';b=auto.rec=='over4'?4:5}
+ if(open('auto',t,b,+auto.stake.toFixed(2)))auto.busy=true,auto.n++;else autoStop('Stopped: invalid settings.')}
+function autoDone(w,r){if(!auto)return;auto.busy=false;auto.pl+=r;if(!w&&auto.altl)auto.lf++;
+ if(w){auto.step=0;auto.stake=auto.base}else if(auto.step<auto.mx){auto.step++;auto.stake*=auto.m}else{auto.step=0;auto.stake=auto.base}
+ $('ast2').textContent='Running. Session '+m$(auto.pl)+', next stake '+m$(auto.stake).slice(1);
+ if(auto.pl>=auto.tp)autoStop('Stopped at take profit ('+m$(auto.pl)+').');else if(auto.pl<=-auto.sl)autoStop('Stopped at stop loss ('+m$(auto.pl)+').');else if(bal<auto.stake)autoStop('Stopped: balance too low.')}
+// risk
+var PRE={cautious:['eo',5,100,60,.5,1,0,5,5,'none'],momentum:['tm',5,30,0,.5,1,0,5,5,'none'],scanner:['eo',5,100,55,1,2,2,10,5,'over4'],speed:['sp',5,100,0,.5,1,0,10,10,'none']};
+$('apre').onchange=function(){var p=PRE[this.value];if(!p)return;['as','ad','aw','at','ast','am','ax','atp','asl','arec'].forEach(function(id,i){$(id).value=p[i]})};
+function risk(){var b=+$('rb').value,s=b*+$('rp').value/100,m=+$('rm').value,l=+$('rl').value,tot=0,k=0,cur=s;
+ while(tot+cur<=l&&k<60){tot+=cur;cur*=m;k++}
+ $('ro').innerHTML='Stake <b>'+m$(s)+'</b>. Doubling-style recovery survives <b>'+k+'</b> losses in a row before the next stake would break your '+m$(l)+' limit (total at risk '+m$(tot)+'). At about 50% odds, a run of '+k+' losses happens about once every '+Math.round(Math.pow(2,k))+' attempts, and with a fast bot that comes quickly. Expected loss is about 5% of everything staked. Calculator-style targets: take profit '+m$(b*.1)+' (10%), stop loss '+m$(l)+'.'}
+['rb','rp','rm','rl'].forEach(function(i){$(i).oninput=risk});risk();
+// loop
+var RULES=[{m:'always',op:'>=',v:0,s:0}],bot=null,BT={rf:['rise','fall'],eo:['even','odd'],ou:['over','under'],md:['matches','differs']};
+function rrender(){var h='';RULES.forEach(function(r,i){h+='<div class="g" style="border:1px solid var(--line);border-radius:8px;padding:8px"><div><label>If</label><select data-i="'+i+'" data-k="m"><option value="always">Always</option><option value="digit">Last digit</option><option value="streak">Same-parity streak</option><option value="tick">Last tick is</option></select></div><div><label>Is</label><select data-i="'+i+'" data-k="op"><option>&gt;=</option><option>&lt;=</option><option>==</option></select></div><div><label>Value</label><input type="number" data-i="'+i+'" data-k="v"></div><div><label>Purchase</label><select data-i="'+i+'" data-k="s"><option value="0">First side</option><option value="1">Second side</option></select></div><button class="ghost full" data-x="'+i+'">Remove condition</button></div>'});$('brules').innerHTML=h;
+ $('brules').querySelectorAll('[data-k]').forEach(function(e){var r=RULES[e.dataset.i],k=e.dataset.k;e.value=r[k];e.onchange=e.oninput=function(){r[k]=(k=='v'||k=='s')?+e.value:e.value}});
+ $('brules').querySelectorAll('[data-x]').forEach(function(e){e.onclick=function(){RULES.splice(+e.dataset.x,1);rrender()}})}
+function cmp(a,o,b){return o=='>='?a>=b:o=='<='?a<=b:a==b}
+function bval(r){var L=px.length-1,d=dg(px[L]);if(r.m=='always')return true;if(r.m=='digit')return cmp(d,r.op,r.v);if(r.m=='streak'){var p=d%2,n=0;for(var i=L;i>=0&&dg(px[i])%2==p;i--)n++;return cmp(n,r.op,r.v)}if(r.m=='tick')return(px[L]>px[L-1])==(r.v==1);return false}
+function bstop(msg){bot=null;jr(msg);$('bgo').textContent='Run bot';$('bst').textContent=msg}
+function bbTick(){if(!bot||bot.busy)return;var r=RULES.find(bval);if(!r)return;var t=BT[$('bt').value][r.s];if(open('bot',t,+$('bd').value,+bot.stake.toFixed(2)))bot.busy=true;else bstop('Stopped: that digit is not valid for this contract.')}
+function botDone(w,r){if(!bot)return;bot.busy=false;bot.pl+=r;if(w){bot.step=0;bot.stake=bot.base}else if(bot.step<bot.mx){bot.step++;bot.stake*=bot.m}else{bot.step=0;bot.stake=bot.base}$('bst').textContent='Running. Session '+m$(bot.pl)+', next stake '+m$(bot.stake).slice(1);if(bot.pl>=bot.tp)bstop('Stopped at take profit ('+m$(bot.pl)+').');else if(bot.pl<=-bot.sl)bstop('Stopped at stop loss ('+m$(bot.pl)+').');else if(bal<bot.stake)bstop('Stopped: balance too low.')}
+$('bgo').onclick=function(){if(bot){bstop('Stopped.');return}if(!RULES.length){alert('Add at least one purchase condition.');return}var s=+$('bs').value;bot={base:s,stake:s,m:+$('bm').value||1,mx:+$('bx').value||0,tp:+$('btp').value||5,sl:+$('bsl').value||5,step:0,pl:0,busy:false};this.textContent='Stop bot';$('bst').textContent='Running. Waiting for a condition.';jr('Bot started')};
+$('badd').onclick=function(){if(RULES.length<10){RULES.push({m:'digit',op:'>=',v:5,s:0});rrender()}};
+var BQ={rise:{t:'rf',d:5,s:1,r:[{m:'always',op:'>=',v:0,s:0}]},follow:{t:'eo',d:5,s:.5,r:[{m:'streak',op:'>=',v:3,s:0}]},differs:{t:'md',d:5,s:.5,r:[{m:'always',op:'>=',v:0,s:1}]},tickup:{t:'rf',d:5,s:.5,r:[{m:'tick',op:'==',v:1,s:0}]}};
+$('bq').onchange=function(){var q=BQ[this.value];if(!q)return;$('bt').value=q.t;$('bd').value=q.d;$('bs').value=q.s;RULES=JSON.parse(JSON.stringify(q.r));rrender()};
+$('bex').onclick=function(){$('bj').value=JSON.stringify({t:$('bt').value,d:+$('bd').value,s:+$('bs').value,m:+$('bm').value,x:+$('bx').value,tp:+$('btp').value,sl:+$('bsl').value,rules:RULES})};
+$('bld').onclick=function(){try{var o=JSON.parse($('bj').value);if(!BT[o.t]||!Array.isArray(o.rules))throw 0;RULES=o.rules.slice(0,10).map(function(r){return{m:['always','digit','streak','tick'].indexOf(r.m)<0?'always':r.m,op:['>=','<=','=='].indexOf(r.op)<0?'>=':r.op,v:+r.v||0,s:r.s==1?1:0}});$('bt').value=o.t;$('bd').value=Math.min(9,Math.max(0,+o.d||0));$('bs').value=Math.max(.35,+o.s||1);$('bm').value=Math.max(1,+o.m||1);$('bx').value=Math.max(0,+o.x||0);$('btp').value=+o.tp||5;$('bsl').value=+o.sl||5;rrender()}catch(e){alert('Could not read that bot file.')}};
+rrender();
+var FB=[{n:'Cautious Even/Odd',k:'a',id:'cautious',d:'Trades Even when Even is 60%+ of the last 100 digits. $0.50 stake, no martingale, $5 stop loss.',r:'Digit percentages are noise, and each trade still pays 95% of fair odds.'},{n:'Momentum',k:'a',id:'momentum',d:'Buys Rise when the 5-tick average is above the 30-tick average, otherwise Fall.',r:'Moving averages describe the past of a random series.'},{n:'Scanner-style recovery',k:'a',id:'scanner',d:'Even/Odd at 55%, $1 stake, x2 martingale capped at 2 steps, switching to Over 4 after a loss.',r:'Martingale changes how losses arrive, not the odds. It is capped on purpose.'},{n:'Speedbot',k:'a',id:'speed',d:'Trades Even on every tick with $10 profit and loss limits.',r:'The most trades per minute, so the 5% edge against you is paid the fastest.'},{n:'Always Rise',k:'b',id:'rise',d:'Buys Rise every tick at a $1 stake.',r:'A coin flip with a 5% edge against you.'},{n:'Even after a parity streak',k:'b',id:'follow',d:'Buys Even after 3 or more digits in a row with the same parity.',r:'Streaks do not make the next digit more likely.'},{n:'Always Differs',k:'b',id:'differs',d:'Buys Differs on digit 5 every tick. It wins about 90% of the time, but each win pays little.',r:'One loss erases roughly 18 wins, so the long-run result is still about 5% down.'},{n:'Follow the last tick',k:'b',id:'tickup',d:'Buys Rise only right after an up tick.',r:'Ticks are independent, so the last move says nothing about the next.'}];
+(function(){var h='';FB.forEach(function(b,i){h+='<div class="card" style="margin:8px 0 0"><strong>'+b.n+'</strong><div class="note" style="font-size:.85rem">'+b.d+'</div><div class="note"><b>Reality check:</b> '+b.r+'</div><button data-fb="'+i+'" style="margin-top:8px;width:100%">Load into '+(b.k=='a'?'Auto Trader':'Builder')+'</button></div>'});$('fbl').innerHTML=h;$('fbl').querySelectorAll('[data-fb]').forEach(function(e){e.onclick=function(){var b=FB[+e.dataset.fb];if(b.k=='a'){$('apre').value=b.id;$('apre').onchange();tab('a')}else{$('bq').value=b.id;$('bq').onchange();tab('b')}}})})();
+document.querySelectorAll('[data-go]').forEach(function(e){e.onclick=function(){tab(e.dataset.go)}});
+$('dup').onclick=function(){tab('b');setTimeout(function(){$('bj').focus()},50)};
+var MKS=[['Volatility 10 (1s)',.2],['Volatility 25 (1s)',.5],['Volatility 50 (1s)',1],['Volatility 75 (1s)',1.5],['Volatility 100 (1s)',2]],MS=MKS.map(function(m,i){var a=[],p=500+i*100;for(var k=0;k<600;k++){p=Math.max(5,p+(Math.random()-.5)*2*(m[1]+.2));a.push(+p.toFixed(2))}return{p:p,a:a}});
+function mstep(){MKS.forEach(function(m,i){var s=MS[i];s.p=Math.max(5,s.p+(Math.random()-.5)*2*(m[1]+.2));s.a.push(+s.p.toFixed(2));if(s.a.length>1000)s.a.shift()})}
+function deep(){var s=$('ns').value,w=+$('nw').value,b=+$('nd').value,rows=MKS.map(function(m,i){var r=stats(s,w,b,MS[i].a);return{n:m[0],pct:r.pct,p:r.p,z:(r.pct-r.p)/(r.sd/2),lab:r.lab}});rows.sort(function(a,c){return Math.abs(c.z)-Math.abs(a.z)});var h='<tr><th>Market</th><th>Seen</th><th>Expected</th><th>z</th><th>Verdict</th></tr>',k=0;rows.forEach(function(r){var big=Math.abs(r.z)>=2.6;if(big)k++;h+='<tr><td>'+r.n.replace(' (1s)','')+'</td><td>'+r.pct.toFixed(1)+'%</td><td>'+r.p.toFixed(1)+'%</td><td>'+r.z.toFixed(1)+'</td><td>'+(big?'Unusual':'Normal')+'</td></tr>'});$('dsT').innerHTML=h;$('dsT').style.display='table';$('nr').innerHTML='Scanned '+MKS.length+' markets for <b>'+rows[0].lab+'</b> over the last '+w+' ticks. Checking many markets makes some look odd by chance, so the cutoff is stricter (z ≥ 2.6). '+(k?k+' flagged. A flag means the past count was unusual, not that the next tick is more likely.':'None flagged: every market is within normal variation.')}
+$('nx').onclick=deep;
+var KW=null,KA=[];
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function kmsg(t){$('kst').textContent=t}
+function kconnect(token){var app=$('kapp').value.trim(),url=$('kws').value.trim();if(url.indexOf('wss://')!=0){kmsg('The WebSocket URL must start with wss://');return}if(KW){try{KW.close()}catch(e){}}
+ try{KW=new WebSocket(app?url+(url.indexOf('?')<0?'?':'&')+'app_id='+encodeURIComponent(app):url)}catch(e){kmsg('Could not open the connection.');return}
+ kmsg('Connecting...');var ws=KW;ws.onopen=function(){ws.send(JSON.stringify({authorize:token}))};
+ ws.onmessage=function(ev){var d;try{d=JSON.parse(ev.data)}catch(e){return}if(d.error){kmsg('Deriv says: '+d.error.message);return}if(d.msg_type=='authorize')kshow(d.authorize);if(d.msg_type=='balance'&&d.balance&&$('kbal'))$('kbal').textContent=d.balance.balance+' '+d.balance.currency};
+ ws.onerror=function(){kmsg('Connection failed. Check that the page is hosted on https and that the App ID and WebSocket URL are right.')}}
+function kshow(a){var v=a.is_virtual==1;kmsg('Logged in as '+a.loginid+(v?' (demo)':' (REAL account)'));var sc=a.scopes||[];
+ var h='<div class="note" style="font-size:.9rem;margin-top:8px"><b>'+esc(a.fullname||'')+'</b><br>Account <b>'+esc(a.loginid)+'</b> '+(v?'<span class="w">DEMO</span>':'<span class="l">REAL MONEY</span>')+'<br>Balance <b id="kbal">'+esc(a.balance)+' '+esc(a.currency)+'</b><br>Token scopes: '+esc(sc.join(', '))+'</div>';
+ if(!v)h+='<p class="note l">This is a real-money account. TickLab does not place real trades. Use a demo account for testing.</p>';
+ if(sc.some(function(s){return s=='admin'||s=='payments'}))h+='<p class="note l">This token can move money or change the account. Revoke it and make one with only the scopes you need.</p>';
+ $('kacc').innerHTML=h;$('kout').style.display='block';try{KW.send(JSON.stringify({balance:1,subscribe:1}))}catch(e){}}
+function kpick(){var h='<p class="note">Choose an account (demo is selected first):</p>';KA.forEach(function(x,i){h+='<button class="ghost" data-k="'+i+'" style="margin:4px 4px 0 0">'+esc(x.id)+(/^vr/i.test(x.id)?' (demo)':' (real)')+'</button>'});$('kpick').innerHTML=h;$('kpick').querySelectorAll('[data-k]').forEach(function(e){e.onclick=function(){kconnect(KA[+e.dataset.k].t)}})}
+$('klog').onclick=function(){var app=$('kapp').value.trim();if(!/^[0-9]+$/.test(app)){kmsg('Enter your numeric App ID first.');return}try{localStorage.setItem('ticklab_app',app)}catch(e){}location.href='https://oauth.deriv.com/oauth2/authorize?app_id='+encodeURIComponent(app)};
+$('ktb').onclick=function(){var t=$('ktok').value.trim();if(!t){kmsg('Paste a token first.');return}kconnect(t);$('ktok').value=''};
+$('kout').onclick=function(){if(KW){try{KW.close()}catch(e){}}KW=null;KA=[];$('kacc').innerHTML='';$('kpick').innerHTML='';this.style.display='none';kmsg('Logged out. Nothing was stored.')};
+(function(){try{var s=localStorage.getItem('ticklab_app');if(s)$('kapp').value=s}catch(e){}var q=new URLSearchParams(location.search),A=[];for(var i=1;i<10;i++){var ac=q.get('acct'+i),tk=q.get('token'+i);if(!ac||!tk)break;A.push({id:ac,t:tk})}if(!A.length)return;try{history.replaceState(null,'',location.pathname)}catch(e){}KA=A;tab('k');kpick();var d=A.filter(function(x){return/^vr/i.test(x.id)})[0];if(d)kconnect(d.t);else kmsg('Choose an account. A demo account is recommended.')})();
+MKS.forEach(function(m,i){$('bkm').add(new Option(m[0],i))});$('bkm').value=4;fill('bkd',0);$('bkd').value=5;for(var q=1;q<=10;q++)$('bkn').add(new Option(q,q));$('bkn').value=10;for(q=1;q<=5;q++)$('bkv').add(new Option(q,q));
+var BKL={eo:['Even','Odd'],rf:['Rise','Fall'],ou:['Over','Under'],md:['Matches','Differs']},BKT={eo:['even','odd'],rf:['rise','fall'],ou:['over','under'],md:['matches','differs']};
+function bkr(){var i=+$('bkm').value,A=MS[i].a,w=+$('bkw').value,s=$('bks').value,b=+$('bkd').value,h=A.slice(-w),c=Array(10).fill(0);h.forEach(function(v){c[dg(v)]++});var mx=Math.max.apply(null,c),mn=Math.min.apply(null,c),cur=dg(A[A.length-1]),H='',O='';
+ c.forEach(function(v,d){H+='<div class="'+(v==mx?'hi ':v==mn?'lo ':'')+(d==cur?'cur':'')+'"><b>'+d+'</b>'+(v/h.length*100).toFixed(1)+'%</div>'});$('bkdg').innerHTML=H;
+ A.slice(-12).forEach(function(v){var o=dg(v)%2;O+='<span class="'+(o?'':'e')+'">'+(o?'O':'E')+'</span>'});$('bkoe').innerHTML=O;$('bkt').textContent=A[A.length-1].toFixed(2);
+ var r=stats(s,w,b,A),L=BKL[s],p2=s=='ou'?h.filter(function(v){return dg(v)<b}).length/h.length*100:100-r.pct;$('bka').textContent=L[0]+' '+r.pct.toFixed(1)+'%';$('bkb').textContent=L[1]+' '+p2.toFixed(1)+'%';
+ var n=+$('bkn').value,st=+$('bkst').value||0;$('bkinfo').textContent='Places '+n+' trades of $'+st.toFixed(2)+' = $'+(n*st).toFixed(2)+' total. Each trade pays out on its own result.'}
+function bkgo(side){var s=$('bks').value,t=BKT[s][side],b=+$('bkd').value,st=+$('bkst').value,n=+$('bkn').value,v=+$('bkv').value,m0=+$('bkm').value;for(var k=0;k<n;k++){if(!open('bulk',t,b,st,0,(m0+k%v)%5))break}}
+$('bka').onclick=function(){bkgo(0)};$('bkb').onclick=function(){bkgo(1)};$('bksc').onclick=bkr;['bkm','bks','bkw','bkd','bkn','bkst','bkv'].forEach(function(i){$(i).onchange=$(i).oninput=bkr});bkr();
+var OPP={even:'odd',odd:'even',rise:'fall',fall:'rise',over:'under',under:'over',matches:'differs',differs:'matches'};
+function stk(){var h=px.slice(-10).map(dg),s='';h.forEach(function(d){s+=(d%2?'O':'E')+' '});var n=0,p=dg(px[px.length-1])%2;for(var i=px.length-1;i>=0&&dg(px[i])%2==p;i--)n++;$('stk').textContent='Last 10 digits: '+s+'· '+n+'x '+(p?'odd':'even');$('ld').textContent=dg(px[px.length-1])}
+function jr(m){JR.unshift(new Date().toLocaleTimeString()+' '+m);if(JR.length>50)JR.pop();$('jrn').innerHTML=JR.join('<br>')}
+$('dl').onclick=function(){var c='n,source,contract,digit,stake,entry,exit,result,pl\n'+ROWS.map(function(r){return r.join(',')}).join('\n');var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:'text/csv'}));a.download='ticklab-trades.csv';a.click()};
+$('mkt').onchange=function(){$('mk').textContent=$('mkt').selectedOptions[0].text;seed()};
+(function loop(){tickp();mstep();var x=px[px.length-1];$('tick').textContent=x.toFixed(2);$('nt').textContent=x.toFixed(2);settle(x);autoTick();bbTick();if($('an').classList.contains('on'))analyse();ticks++;$('tc').textContent=ticks;stk();if($('bk').classList.contains('on'))bkr();setTimeout(loop,+$('spd').value)})();
+seed();$('tick').textContent=px[px.length-1].toFixed(2);show();
+$('rs').onclick=function(){bal=1000;N=0;PL=0;pend=[];TS=0;TPO=0;WN=0;LS=0;ROWS=[];JR=[];$('jrn').innerHTML='';$('log').innerHTML='';show()};
+// floating panel
+function tog(){var a=$('an');a.classList.toggle('on');$('fab').setAttribute('aria-expanded',a.classList.contains('on'));$('fab').textContent=a.classList.contains('on')?'✕':'AI';if(a.classList.contains('on'))analyse()}
+$('fab').onclick=tog;$('x').onclick=tog;$('x').onkeydown=function(e){if(e.key=='Enter')tog()};
+(function(){var a=$('an'),h=$('hd'),dx,dy,on=0;h.onpointerdown=function(e){if(e.target.id=='x')return;on=1;var r=a.getBoundingClientRect();dx=e.clientX-r.left;dy=e.clientY-r.top;h.setPointerCapture(e.pointerId)};
+h.onpointermove=function(e){if(!on)return;a.style.left=Math.max(0,Math.min(innerWidth-a.offsetWidth,e.clientX-dx))+'px';a.style.top=Math.max(0,Math.min(innerHeight-60,e.clientY-dy))+'px'};
+h.onpointerup=function(){on=0}})();
+</script></body></html>
